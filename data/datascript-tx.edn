@@ -1,0 +1,25 @@
+;; data/datascript-tx.edn — DataScript tx-data derived from src/association/facts.cljc
+;; `association.facts/catalog` (ADR-2607141700 Wave 0). Same shape as sibling files.
+
+[#:association-rule{:id "busa.founding-2003-merger"
+                     :title "Business Unity South Africa (BUSA) formed in October 2003 through a merger of Business South Africa and the South African Chamber of Business (Wikipedia merger detail, October 2003 date independently confirmed by busa.org.za's own About BUSA page)"
+                     :association "busa"
+                     :isic "9411"
+                     :country "ZAF"
+                     :kind :governance-program
+                     :url "https://www.busa.org.za/about-busa/"
+                     :url-provenance :official-busa-org-za
+                     :established-date "2003-10"
+                     :retrieved-at "2026-07-17"
+                     :topic [:governance]}
+ #:association-rule{:id "busa.operations-began-2004"
+                     :title "BUSA began operating in January 2004, becoming the formally recognised representative of business at NEDLAC (South Africa's National Economic Development and Labour Council) (busa.org.za official About BUSA page)"
+                     :association "busa"
+                     :isic "9411"
+                     :country "ZAF"
+                     :kind :governance-program
+                     :url "https://www.busa.org.za/about-busa/"
+                     :url-provenance :official-busa-org-za
+                     :established-date "2004-01"
+                     :retrieved-at "2026-07-17"
+                     :topic [:governance]}]
