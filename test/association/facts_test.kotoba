@@ -1,10 +1,11 @@
 (ns association.facts-test
-  (:require [clojure.test :refer [deftest is]]
-            [association.facts :as facts]))
+  (:require [clojure.test :refer [deftest is testing]]
+            [association.facts :as facts]
+            [clojure.string :as str]))
 
 (deftest busa-has-spec-basis
   (let [sb (facts/spec-basis "busa")]
-    (is (= 2 (count sb)))
+    (is (= 12 (count sb)))
     (is (every? #(= "9411" (:association-rule/isic %)) sb))
     (is (every? #(= "ZAF" (:association-rule/country %)) sb))))
 
@@ -19,6 +20,52 @@
     (is (= ["ibec"] (:missing-associations c)))))
 
 (deftest by-topic-filters
-  (is (= 2 (count (facts/by-topic "busa" :governance))))
-  (is (empty? (facts/by-topic "busa" :labor)))
+  (is (= 7 (count (facts/by-topic "busa" :governance))))
+  (is (= 4 (count (facts/by-topic "busa" :membership))))
+  (is (= 2 (count (facts/by-topic "busa" :labor))))
+  (is (= 2 (count (facts/by-topic "busa" :policy))))
+  (is (= 2 (count (facts/by-topic "busa" :history))))
+  (is (= 1 (count (facts/by-topic "busa" :international))))
+  (is (empty? (facts/by-topic "busa" :statute)))
   (is (empty? (facts/by-topic "ibec" :governance))))
+
+(deftest every-entry-is-individually-addressable
+  ;; A catalog that reused an id would let one entry shadow another under
+  ;; :db.unique/identity, and the count assertions above would not notice.
+  (let [sb (facts/spec-basis "busa")]
+    (is (= (count sb) (count (into #{} (map :association-rule/id sb)))))
+    (is (every? #(re-matches #"busa\.[a-z0-9-]+" (:association-rule/id %)) sb))))
+
+(deftest every-entry-carries-a-source-and-says-whose-it-is
+  ;; The label has to match the host: an :official-busa-org-za entry that
+  ;; points anywhere but busa.org.za is a first-party claim nobody made.
+  (doseq [e (facts/spec-basis "busa")]
+    (testing (:association-rule/id e)
+      (is (re-matches #"https://\S+" (:association-rule/url e)))
+      (is (= ({:wikipedia-corroborated "en.wikipedia.org"
+               :official-busa-org-za "www.busa.org.za"}
+              (:association-rule/url-provenance e))
+             (second (re-find #"^https://([^/]+)/" (:association-rule/url e)))))
+      (is (seq (:association-rule/source-quote e)))
+      (is (seq (:association-rule/topic e)))
+      (is (re-matches #"\d{4}-\d{2}-\d{2}" (:association-rule/retrieved-at e))))))
+
+(deftest a-dated-entry-quotes-its-date
+  ;; The year of every dated entry is in its own quote; an undated entry says
+  ;; why instead of silently carrying nothing.
+  (doseq [e (facts/spec-basis "busa")]
+    (testing (:association-rule/id e)
+      (if-let [d (or (:association-rule/established-date e)
+                     (:association-rule/last-revised-date e))]
+        (is (str/includes? (:association-rule/source-quote e) (subs d 0 4)))
+        (is (keyword? (:association-rule/date-unknown-because e)))))))
+
+(deftest the-wikipedia-seeding-is-still-named-as-such
+  ;; busa.org.za dates BUSA's formation but does not describe the merger that
+  ;; formed it, so that one entry rests on Wikipedia. The number is pinned: a
+  ;; later tick that cites Wikipedia for something new has to come here and
+  ;; say so, and one that finds a BUSA page describing the merger gets a red
+  ;; test telling it to lower the number.
+  (let [by-prov (frequencies (map :association-rule/url-provenance (facts/spec-basis "busa")))]
+    (is (= 1 (:wikipedia-corroborated by-prov)))
+    (is (= 11 (:official-busa-org-za by-prov)))))

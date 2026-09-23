@@ -32,12 +32,13 @@ municipality
 ([`cloud-itonami-municipality-zaf-cape-town`](https://github.com/cloud-itonami/cloud-itonami-municipality-zaf-cape-town)),
 and association (this repo).
 
-`busa.org.za`'s own "About BUSA" page renders successfully and
-directly states the October 2003 founding / January 2004 operations
-start; `en.wikipedia.org`'s own article on BUSA additionally
-corroborates the October 2003 date and supplies the merger detail
-(Business South Africa + South African Chamber of Business) not
-present on the official page checked.
+Eleven of the twelve entries cite `busa.org.za` itself (About BUSA,
+How BUSA Works, Strategic Objectives, Vision/Mission/Ethos, Membership
+Information, and the 1 July 2026 media statement on the UIF). The one
+exception is the merger that formed BUSA (Business South Africa + South
+African Chamber of Business): no `busa.org.za` page checked describes it,
+so that entry cites `en.wikipedia.org`, and says so in its
+`:url-provenance`.
 
 ## Scope
 
@@ -50,22 +51,46 @@ fabricate one.
 
 ## Data
 
-- `src/association/facts.cljc` — the catalog, source of truth.
+- `data/datascript-tx.edn` — the catalog, **source of truth**. Facts are
+  authored here and nowhere else. Query it alongside other
+  `cloud-itonami`/`etzhayyim` compliance-fact sources via
+  `com-junkawasaki/root`'s `scripts/compliance-fact-query.cljk`.
+- `src/association/facts.kotoba` — the Clojure reading, **generated**.
+- `src/association_facts.kotoba` — the Kotoba port, **generated**; compiles
+  with `amu compile --target js|wasm32-browser|x86_64-linux|aarch64-macos`.
 - `schema/association-rule.edn` — DataScript schema.
-- `data/datascript-tx.edn` — derived DataScript tx-data (query this
-  alongside other `cloud-itonami`/`etzhayyim` compliance-fact sources via
-  `com-junkawasaki/root`'s `scripts/compliance-fact-query.cljs`).
 
-Both entries directly WebFetch-verified: the October 2003 founding of
-BUSA (via merger of Business South Africa and the South African
-Chamber of Business, per Wikipedia, with the date independently
-confirmed by busa.org.za's own official page), and BUSA beginning
-operations in January 2004 as the formally recognised representative
-of business at NEDLAC.
+Every entry carries the page it came from (`:source-article`) and the
+verbatim span the claim rests on (`:source-quote`). To change the catalog:
+
+```bash
+# 1. edit data/datascript-tx.edn, then regenerate both readings
+kbb --backend sci scripts/gen-kotoba-port.cljk
+kbb --backend sci scripts/gen-kotoba-port.cljk --check   # exit 1 if either reading drifted
+
+# 2. check the catalog against its own sources
+kbb --backend sci scripts/verify-catalog.cljk            # structural, offline
+kbb --backend sci scripts/verify-catalog.cljk --live     # fetch every :url, require every quote
+```
+
+`verify-catalog` exits `0` (checked, nothing wrong), `1` (findings
+printed) or `2` (REFUSED — could not check, e.g. a source did not
+answer 2xx). A `2` is not a pass.
+
+Every page on `busa.org.za` also carries a sidebar of the latest media
+statements. A span copied from it is "on" every page of the site and
+supports nothing about the page it is cited from, so quotes are taken
+from each page's own body.
+
+`kbb -M:test` finds no test namespace in this repository (the tests are
+`.kotoba` files since the 2026-09-10 rename), so it does not exercise
+`test/`. `--check` above is what keeps the two generated readings tied to
+the data.
 
 ## License
 
 AGPL-3.0-or-later (matches the `cloud-itonami-iso3166-*` /
 `-municipality-*` / `-assoc-*` / `-lei-*` convention). Policy text
-itself remains BUSA's; this repo stores only citation metadata
-(id/title/url/dates), not full text.
+itself remains BUSA's; this repo stores citation metadata
+(id/title/url/dates) and the short verbatim span each claim rests on,
+not full text.
